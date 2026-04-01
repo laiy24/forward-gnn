@@ -205,3 +205,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+results
+dev*
+.DS_Store
+stdout*
+tmp_tb
+*plot*
+outputs
+data/
