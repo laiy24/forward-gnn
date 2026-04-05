@@ -49,6 +49,7 @@ class NodeSingleForwardModel(BaseNodeGNNModel):
         result_manager: ResultManager,
         run_i: int
     ):
+        data = data.to(self.device)
         # set up training
         self.train()
         start = timer()
@@ -57,7 +58,6 @@ class NodeSingleForwardModel(BaseNodeGNNModel):
 
 
         # build new graph with virtual nodes
-        data = data.to(self.device)
         self.augmenter = Augmentor(
             data,
             self.append_label,
@@ -244,6 +244,7 @@ class NodeSFTop2LossModel(BaseNodeGNNModel):
         result_manager: ResultManager,
         run_i: int
     ):
+        data = data.to(self.device)
         # set up training
         self.train()
         start = timer()
@@ -251,7 +252,6 @@ class NodeSFTop2LossModel(BaseNodeGNNModel):
 
 
         # build new graph with virtual nodes
-        data = data.to(self.device)
         self.augmenter = Augmentor(
             data,
             self.append_label,
@@ -443,9 +443,7 @@ class NodeSFTop2InputModel(BaseNodeGNNModel):
         states = [x_new]
 
         for i, layer in enumerate(self.layers):
-            gnn_out_channels = int(getattr(layer.gnn_layer, "out_channels"))
             gnn_in_channels = int(getattr(layer.gnn_layer, "in_channels"))
-            x_out = x.new_zeros((x.shape[0], gnn_out_channels))
             x_next = x.new_zeros((x.shape[0], max(0, gnn_in_channels - int(x_new.shape[1]))))
 
             x_new = layer.forward(
@@ -466,6 +464,8 @@ class NodeSFTop2InputModel(BaseNodeGNNModel):
         result_manager: ResultManager,
         run_i: int
     ):
+        data = data.to(self.device)
+
         # set up training
         self.train()
         start = timer()
@@ -473,7 +473,6 @@ class NodeSFTop2InputModel(BaseNodeGNNModel):
 
 
         # build new graph with virtual nodes
-        data = data.to(self.device)
         self.augmenter = Augmentor(
             data,
             self.append_label,

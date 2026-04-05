@@ -48,6 +48,7 @@ class NodeLabelAppendFFModel(BaseNodeGNNModel):
         result_manager: ResultManager,
         run_i: int
     ):
+        data = data.to(self.device)
         # set up training
         self.train()
         start = timer()
@@ -56,7 +57,6 @@ class NodeLabelAppendFFModel(BaseNodeGNNModel):
 
 
         # build new graph with virtual nodes
-        data = data.to(self.device)
         assert data.x is not None
         assert data.edge_index is not None
         assert data.y is not None
@@ -160,7 +160,7 @@ class NodeLabelAppendFFModel(BaseNodeGNNModel):
                                 last_layer=i
                             )
             print(f"[Layer-{i}] Test Accuracy : {test_acc:.2f}%\n")
-            result_manager.save_run_result(run_i, perf_dict=get_perf_dict(perf=test_acc), num_layers=i + 1)
+            result_manager.save_run_result(run_i, perf_dict=get_perf_dict(perf=test_acc), num_layers=(i + 1) // 2) # skip normalization layers
             
 
         logger.info("Finished training the network.")
@@ -317,6 +317,7 @@ class NodeVirtualNodeFFModel(BaseNodeGNNModel):
         result_manager: ResultManager,
         run_i: int
     ):
+        data = data.to(self.device)
         # set up training
         self.train()
         start = timer()
@@ -325,7 +326,6 @@ class NodeVirtualNodeFFModel(BaseNodeGNNModel):
 
 
         # build new graph with virtual nodes
-        data = data.to(self.device)
         self.augmenter = Augmentor(
             data,
             self.append_label,
@@ -442,7 +442,7 @@ class NodeVirtualNodeFFModel(BaseNodeGNNModel):
                                 last_layer=i
                             )
             print(f"[Layer-{i}] Test Accuracy : {test_acc:.2f}%\n")
-            result_manager.save_run_result(run_i, perf_dict=get_perf_dict(perf=test_acc), num_layers=i + 1)
+            result_manager.save_run_result(run_i, perf_dict=get_perf_dict(perf=test_acc), num_layers=(i + 1) // 2) # skip normalization layers
 
             # use output from this gnn layer as the input to the next layer
             features = layer.forward(features, aug_graph.edge_index, aug_graph.edge_type)

@@ -9,7 +9,7 @@ from utils.log_utils import logger
 from utils.eval_utils import eval_node_classification, eval_link_prediction
 from models.node.common import BaseNodeGNNModel
 from models.node.node_sf import NodeSingleForwardModel, NodeSFTop2InputModel, NodeSFTop2LossModel
-
+from models.node.node_ff import NodeVirtualNodeFFModel, NodeLabelAppendFFModel
 
 class FWNodeClassificationTrainer:
     def __init__(self, model, data, device, result_manager, run_i, lr, epochs, patience, args):
@@ -37,8 +37,10 @@ class FWNodeClassificationTrainer:
                               NodeSFTop2LossModel,
                               NodeSingleForwardModel)):
             acc, _ = model.eval_model(eval_mask=data.test_mask)
-        else: 
+        elif isinstance(model, (NodeVirtualNodeFFModel, NodeLabelAppendFFModel)):
             acc, _ = model.eval_model(data, train_mask=data.train_mask | data.val_mask, eval_mask=data.test_mask)
+        else:
+             raise NotImplementedError(f"Model type {type(model)} not supported for evaluation.")
         print(f"Test Accuracy: {acc:.4f}%")
         return acc
 

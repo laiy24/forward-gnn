@@ -26,7 +26,7 @@ LR=0.001
 for dataset in "CitationFull-CiteSeer" "CitationFull-Cora_ML" "CitationFull-PubMed" "Amazon-Photo" "GitHub"; do
   DATASET="${dataset}"
 
-for model in "GNN-GCN" "GNN-SAGE" "GNN-GAT"; do
+for model in "GCN" "SAGE" "GAT"; do
 
 for num_layers in 1 2 3 4; do
 

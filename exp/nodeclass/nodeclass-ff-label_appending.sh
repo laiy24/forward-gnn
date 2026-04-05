@@ -26,7 +26,7 @@ VAL_EVERY=2
 PATIENCE=100
 declare -a DATASETS=("CitationFull-CiteSeer" "CitationFull-Cora_ML" "CitationFull-PubMed" "Amazon-Photo" "GitHub")
 
-for model in "GNN-GCN" "GNN-SAGE" "GNN-GAT"; do
+for model in "GCN" "SAGE" "GAT"; do
 
 for dataset in "${DATASETS[@]}"; do
   DATASET="${dataset}"
