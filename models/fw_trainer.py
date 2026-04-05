@@ -41,7 +41,7 @@ class FWNodeClassificationTrainer:
             acc, _ = model.eval_model(data, train_mask=data.train_mask | data.val_mask, eval_mask=data.test_mask)
         else:
              raise NotImplementedError(f"Model type {type(model)} not supported for evaluation.")
-        print(f"Test Accuracy: {acc:.4f}%")
+        print(f"Test Accuracy: {acc:.6f}%")
         return acc
 
     def train_test(self):

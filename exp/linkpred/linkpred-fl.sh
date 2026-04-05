@@ -12,7 +12,7 @@ cd "${scriptDir}"/../../ || exit
 EXP_SETTING='link-fl'
 TASK='link-pred'
 TRAINING_TYPE='forward'
-FORWARD_TYPE='SF'
+FORWARD_TYPE='FL'
 
 NUM_RUNS=5
 SEED=100

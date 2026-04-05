@@ -125,6 +125,8 @@ class NodeSFTop2LossLayer(BaseNodeLayer):
         self.optimizer.zero_grad()
         loss = self.loss(logits, train_y)
         loss.backward()
+        # cap gradients to avoid explosion, which is more likely to happen when the input of this layer is from multiple layers
+        torch.nn.utils.clip_grad_norm_(self.gnn_layer.parameters(), self.args.grad_max_norm)
         self.optimizer.step()
         return cur_layer_out, loss.item()
     

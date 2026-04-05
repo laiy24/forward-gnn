@@ -27,6 +27,7 @@ class BPNodeClassificationTrainer:
         start = timer()
         stopper = EarlyStopping(self.patience) if self.patience >= 0 else None
         epoch = -1
+        best_val_epoch = -1
 
         data = data.clone().to(self.device)
         model = model.to(self.device)
@@ -59,6 +60,10 @@ class BPNodeClassificationTrainer:
                     f'Epoch: {epoch:03d}, Train Loss={loss.item():.4f}, Val Acc={val_perf:.4f}'
                 )
 
+                perf_improved = stopper.best_score is None or stopper.improved(val_perf, stopper.best_score)
+                if perf_improved:
+                    best_val_epoch = epoch
+
                 if stopper.step(val_perf, model):
                     print(f"[Epoch-{epoch}] Early stop!")
                     break
@@ -69,7 +74,7 @@ class BPNodeClassificationTrainer:
         train_time = timer() - start
         logger.info("Finished training")
 
-        return train_time, epoch
+        return train_time, epoch, best_val_epoch
 
     def test(self):
         model, data = self.model, self.data.to(self.device)
@@ -84,13 +89,14 @@ class BPNodeClassificationTrainer:
         return test_acc
 
     def train_test(self):
-        train_time, train_epochs = self.train()
+        train_time, train_epochs, best_val_epoch = self.train()
         test_acc = self.test()
 
         return {
             "test_perf": test_acc,
             "train_time": train_time,
-            "train_epochs": train_epochs,
+            "train_epochs": [train_epochs],
+            "best_val_epochs": [best_val_epoch] if best_val_epoch >= 0 else [],
         }
 
 
@@ -121,6 +127,7 @@ class BPLinkPredictionTrainer:
         start = timer()
         stopper = EarlyStopping(self.patience) if self.patience >= 0 else None
         epoch = -1
+        best_val_epoch = -1
 
         train_data = train_data.clone().to(self.device)
         val_data = val_data.clone().to(self.device)
@@ -159,6 +166,10 @@ class BPLinkPredictionTrainer:
                 val_perf = val_perf_dict[val_metric]
                 epoch_tqdm.set_description(f'Epoch: {epoch:03d}, Train Loss={loss.item():.4f}, Val AUC={val_perf:.4f}')
 
+                perf_improved = stopper.best_score is None or stopper.improved(val_perf, stopper.best_score)
+                if perf_improved:
+                    best_val_epoch = epoch
+
                 if stopper.step(val_perf, model):
                     print(f"[Epoch-{epoch}] Early stop!")
                     break
@@ -169,7 +180,7 @@ class BPLinkPredictionTrainer:
         train_time = timer() - start
         logger.info("Finished training")
 
-        return train_time, epoch
+        return train_time, epoch, best_val_epoch
 
     def test(self):
         model, test_data = self.model, self.test_data.to(self.device)
@@ -188,12 +199,13 @@ class BPLinkPredictionTrainer:
         return test_rocauc
 
     def train_test(self):
-        train_time, train_epochs = self.train()
+        train_time, train_epochs, best_val_epoch = self.train()
         test_rocauc = self.test()
 
         return {
             "test_perf": test_rocauc,
             "train_time": train_time,
-            "train_epochs": train_epochs,
+            "train_epochs": [train_epochs],
+            "best_val_epochs": [best_val_epoch] if best_val_epoch >= 0 else [],
         }
 

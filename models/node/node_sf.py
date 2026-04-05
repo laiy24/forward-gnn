@@ -129,7 +129,7 @@ class NodeSingleForwardModel(BaseNodeGNNModel):
             train_epochs.append(epoch)
             best_val_epochs.append(perf_log.best_val_epoch)
             test_acc, _ = self.eval_model(eval_mask=data.test_mask, last_layer=i)
-            print(f"[Layer-{i}] Test Accuracy : {test_acc:.2f}%\n")
+            print(f"[Layer-{i}] Test Accuracy : {test_acc:.6f}%\n")
             result_manager.save_run_result(run_i, perf_dict=get_perf_dict(perf=test_acc), num_layers=i + 1)
 
             # use output from this gnn layer as the input to the next layer
@@ -229,12 +229,12 @@ class NodeSFTop2LossModel(BaseNodeGNNModel):
         states = [self.norm(x_new)]
 
         for _, layer in enumerate(self.layers):
-            x_new = self.norm(layer.forward(
+            x_new = layer.forward(
                 x=x_new, 
                 edge_index=edge_index,
                 edge_type=edge_type,
-            )).detach()
-            states.append(x_new)
+            )
+            states.append(self.norm(x_new).detach())
         return states  
 
 
@@ -274,12 +274,10 @@ class NodeSFTop2LossModel(BaseNodeGNNModel):
         epoch = -1
         stopper = EarlyStopping(self.patience) if self.patience >= 0 else None
         perf_log = PerformanceManager("Accuracy")
-        x = self.aug_graph.x
         try:
             for epoch in epochs:
                 new_states: List[torch.Tensor] = list(states)
-                assert x is not None
-                new_states[0] = x
+                new_states[0] = states[0]
                 total_loss = 0.0
                 for i, layer in enumerate(self.layers):
                     node_embed, loss = cast(NodeSFTop2LossLayer, layer).forward_train(
@@ -336,7 +334,7 @@ class NodeSFTop2LossModel(BaseNodeGNNModel):
 
         # logging performance and saving results
         test_acc, _ = self.eval_model(eval_mask=data.test_mask)
-        print(f"Test Accuracy : {test_acc:.2f}%\n")
+        print(f"Test Accuracy : {test_acc:.6f}%\n")
 
         return get_perf_dict(
             train_epochs=[epoch],
@@ -360,7 +358,6 @@ class NodeSFTop2LossModel(BaseNodeGNNModel):
         accumulated_probs = []
         storable_layers = list(range(len(self.layers)))
         # build first time state memory
-        assert aug_graph.node_one_hot_labels is not None
         states = self.forward_all_layer_first_time(
             x=aug_graph.x,
             edge_index=aug_graph.edge_index,
@@ -414,14 +411,14 @@ class NodeSFTop2InputModel(BaseNodeGNNModel):
             # use previoud and next input as the input to the gnn layer, instead of the output from the previous layer
             in_channels = layer_size[i - 1] + layer_size[i + 1] 
             if self.append_label == "input":
-                if i == 0:
+                if i == 1:
                     in_channels = in_channels + num_classes
 
             self.layers.append(
                 NodeSFTop2InputLayer(
                     gnn_layer=ConvLayer(gnn=self.model_type,
                                       in_channels=in_channels,
-                                      out_channels=layer_size[i + 1]),
+                                      out_channels=layer_size[i]),
                     optimizer_name=optimizer_name,
                     optimizer_kwargs=optimizer_kwargs,
                     args=args,
@@ -520,6 +517,8 @@ class NodeSFTop2InputModel(BaseNodeGNNModel):
                         # avoid grabing from layer which has not run yet
                         x_prev_src = prev_state if prev_state is not None else states[i]
                         x_next_src = next_state if next_state is not None else states[i + 2]
+                        assert x_prev_src is not None
+                        assert x_next_src is not None
                         x_prev = x_prev_src.float()
                         x_next = x_next_src.float()
 
@@ -579,7 +578,7 @@ class NodeSFTop2InputModel(BaseNodeGNNModel):
 
         # logging performance and saving results
         test_acc, _ = self.eval_model(eval_mask=data.test_mask)
-        print(f"Test Accuracy : {test_acc:.2f}%\n")
+        print(f"Test Accuracy : {test_acc:.6f}%\n")
 
         return get_perf_dict(
             train_epochs=[epoch],
@@ -632,6 +631,8 @@ class NodeSFTop2InputModel(BaseNodeGNNModel):
                     # avoid grabing from layer which has not run yet
                     x_prev_src = prev_state if prev_state is not None else states[i]
                     x_next_src = next_state if next_state is not None else states[i + 2]
+                    assert x_prev_src is not None
+                    assert x_next_src is not None
                     x_prev = x_prev_src.float()
                     x_next = x_next_src.float()
 

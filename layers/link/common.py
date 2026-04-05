@@ -37,7 +37,7 @@ class BaseLinkLayer(torch.nn.Module, ABC):
 
 	def forward_loss(self, out, edge_label):
 		# BCEWithLogitsLoss, sigmoid to probability then binary cross entropy loss
-		loss = self.loss(out.sum(dim=1), edge_label.float())
+		loss = self.loss(out.sum(dim=1), edge_label)
 		
 		is_pos = edge_label == 1
 		pos_loss = loss[is_pos]
@@ -45,20 +45,19 @@ class BaseLinkLayer(torch.nn.Module, ABC):
 		neg_loss = loss[is_neg]
 		
 		with torch.no_grad():
-			cumul_pos_logits = pos_loss.exp().sum().item()
-			cumul_neg_logits = neg_loss.exp().sum().item()
+			cumul_pos_logits = pos_loss.exp().mean().item()
+			cumul_neg_logits = (1 - neg_loss.exp()).mean().item()
 		return loss.mean(), (out[is_pos], out[is_neg]), (cumul_pos_logits, cumul_neg_logits)
 
 
 
 	def _forward(self, x: torch.Tensor, edge_index: torch.Tensor, edge_type: Optional[torch.Tensor] = None):
-		# Some GNNs require edge type, some do not.
-		if edge_type is not None:
-			try:
-				return self.gnn_layer(x, edge_index, edge_type)
-			except TypeError:
-				return self.gnn_layer(x, edge_index)
-		return self.gnn_layer(x, edge_index)
+		try:
+			return self.gnn_layer(x, edge_index)
+		except TypeError:
+			if edge_type is None:
+				raise
+			return self.gnn_layer(x, edge_index, edge_type)
 
 	def clear_cached_propagate(self) -> None:
 		"""Clear cached propagation if underlying conv supports it."""

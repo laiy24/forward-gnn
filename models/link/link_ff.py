@@ -145,7 +145,7 @@ class LinkForwardModel(BaseLinkGNNModel):
                                 data=test_data,
                                 last_layer=i
                             )
-            print(f"[Layer-{i}] Test Accuracy : {test_acc:.2f}%\n")
+            print(f"[Layer-{i}] Test AUC : {test_acc:.6f}\n")
             result_manager.save_run_result(run_i, perf_dict=get_perf_dict(perf=test_acc), num_layers=(i + 1) // 2) # skip normalization layers
             
 
@@ -379,7 +379,7 @@ class LinkForwardTopDownModel(BaseLinkGNNModel):
 
         # logging performance and saving results
         test_acc, _ = self.eval_model(data=test_data, last_layer=-1)
-        print(f"Test Accuracy : {test_acc:.2f}%\n")
+        print(f"Test AUC : {test_acc:.6f}\n")
 
         return get_perf_dict(
             train_epochs=[epoch],

@@ -83,11 +83,19 @@ def main(args):
 
         # print result for the run and save it
         result = trainer.train_test()
+        train_epochs = result.get("train_epochs", [])
+        if not isinstance(train_epochs, list):
+            train_epochs = [train_epochs]
+
+        best_val_epochs = result.get("best_val_epochs", [])
+        if not isinstance(best_val_epochs, list):
+            best_val_epochs = [best_val_epochs]
+
         perf_dict = {
             'perf': result["test_perf"],
             'train_time': result["train_time"],
-            'train_epochs': result["train_epochs"],
-            'best_val_epochs': result["best_val_epochs"],
+            'train_epochs': train_epochs,
+            'best_val_epochs': best_val_epochs,
         }
         result_manager.save_run_result(run_i, perf_dict)
 
@@ -228,7 +236,7 @@ def build_link_prediction_model(model_type, n_layers, hidden_size, loss_fn_name,
             optimizer_kwargs={'lr': lr},
             args=args,
         )
-    elif args.forward_type == "SF":  # single forward
+    else:  # forward forward or forward learning
         logger.info(f"link pred forward learning model {model_type} is used")
         layer_sizes = [data.num_features] + [hidden_size] * n_layers
         model = LinkForwardModel(
@@ -237,8 +245,6 @@ def build_link_prediction_model(model_type, n_layers, hidden_size, loss_fn_name,
             optimizer_kwargs={'lr': lr, 'weight_decay': 5e-4},
             args=args,
         )
-    else:
-        raise ValueError(f"Invalid model: {model_type}")
 
     print(model)
     return model
@@ -303,8 +309,8 @@ def parse_args():
                         help="which top-down forward learning model to use (only applicable for node classification task)")
     parser.add_argument("--num-negs", type=int, default=2,
                         help="number of negative samples per postive")
-    parser.add_argument('--forward-type', type=str, default="FF", choices=["FF", "SF"],
-                        help="forward forward or single forward")
+    parser.add_argument('--forward-type', type=str, default="FF", choices=["FF", "FL", "SF"],
+                        help="forward forward, forward-looking(link only) or single forward")
 
 
     args = parser.parse_args()

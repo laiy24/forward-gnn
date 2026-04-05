@@ -82,7 +82,7 @@ class Augmentor:
 		assert isinstance(y, torch.Tensor), type(y)
 		assert isinstance(edge_index, torch.Tensor), type(edge_index)
 		self.x: torch.Tensor = x
-		self.y: torch.Tensor = y.long()
+		self.y: torch.Tensor = y
 		self.edge_index: torch.Tensor = edge_index
 
 		y = self.y
@@ -248,7 +248,7 @@ class LabelAppendingAugmentor:
 		'''positive'''
 		# construct one-hot for all nodes
 		pos_node_one_hot = torch.zeros((num_nodes, num_classes), device=self.device)
-		pos_node_one_hot[train_mask] = self.onehot_labels[y[train_mask].long()]
+		pos_node_one_hot[train_mask] = self.onehot_labels[y[train_mask]]
 		# for non-augmented nodes, either fill with uniform distribution or zeros depending on non_augmented_nodes_style
 		if self.non_augmented_nodes_style == "uniform":
 			if num_non_train_nodes > 0:
@@ -268,14 +268,14 @@ class LabelAppendingAugmentor:
 		# set the probability of the TRUE class to 0.0 possibility
 		weights[torch.arange(num_nodes), y] = 0.0
         # randomly pick classes based on weights
-		neg_classes = torch.multinomial(weights, num_samples=num_negs, replacement=False)
-
+		neg_classes = torch.multinomial(weights, num_samples=num_classes - 1, replacement=False).to(self.device) # (num_nodes, num_classes-1)
+		
 		# neg feature
 		neg_x_list = []
 		for i in range(min(num_negs, neg_classes.shape[1])):
 			neg_class_i = neg_classes[:, i]
 			neg_node_one_hot = torch.zeros((num_nodes, num_classes), device=self.device)
-			neg_node_one_hot[train_mask] = self.onehot_labels[neg_class_i[train_mask].long()]
+			neg_node_one_hot[train_mask] = self.onehot_labels[neg_class_i[train_mask]]
 			if self.non_augmented_nodes_style == "uniform":
 				if num_non_train_nodes > 0:
 					uniform_row = torch.full((num_classes,), fill_value=1 / num_classes, device=self.device)
@@ -298,8 +298,8 @@ class LabelAppendingAugmentor:
 		num_nodes = x.shape[0]
 		num_classes = len(self.label_names)
 
-		y_eval = torch.zeros((num_nodes,num_classes), dtype=torch.long, device=self.device)
-		y_eval[train_mask] = self.onehot_labels[y[train_mask].long()]
+		y_eval = torch.zeros((num_nodes, num_classes), device=self.device)
+		y_eval[train_mask] = self.onehot_labels[y[train_mask]]
 		y_eval[eval_mask] = self.onehot_labels[eval_calss].repeat(int(eval_mask.sum().item()), 1)
 		if self.non_augmented_nodes_style == "uniform":
 			uniform_row = torch.full((num_classes,), fill_value=1 / num_classes, device=self.device)

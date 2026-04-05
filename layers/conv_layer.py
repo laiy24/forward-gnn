@@ -9,7 +9,6 @@ class ConvLayer(torch.nn.Module):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.relu = torch.nn.ReLU()
 
         if "Cached".lower() in gnn.lower():
             if "SAGE" in gnn:
@@ -28,7 +27,11 @@ class ConvLayer(torch.nn.Module):
             self.gnn = GATConv(in_channels=in_channels, out_channels=out_channels // heads, heads=heads)
         else:
             raise ValueError(f"wrong gnn config: {gnn}")
-    def forward(self, x, edge_index):
+        self.relu = torch.nn.ReLU()
+        
+    def forward(self, x, edge_index, edge_type=None):
+        # edge_type is not needed in SAGE GAT or GCN
+        # but we still take the input for compatibility with heterogeneous GNNs, and simply ignore it here
         return self.relu(self.gnn(x, edge_index))
 
 

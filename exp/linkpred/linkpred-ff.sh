@@ -9,11 +9,10 @@
 scriptDir=$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")
 cd "${scriptDir}"/../../ || exit
 
-EXP_SETTING='link-fl-topdown'
+EXP_SETTING='link-ff'
 TASK='link-pred'
 TRAINING_TYPE='forward'
-FORWARD_TYPE='FL'
-TOPDOWN_TYPE='top2input'
+FORWARD_TYPE='FF'
 
 NUM_RUNS=5
 SEED=100
@@ -28,12 +27,11 @@ for dataset in "CitationFull-CiteSeer" "CitationFull-Cora_ML" "CitationFull-PubM
 
 for model in "GCN" "SAGE" "GAT"; do
 
-for num_layers in 1 2 3 4; do
+for num_layers in 4; do
 
 python experiment.py \
 --training-type "${TRAINING_TYPE}" \
 --forward-type "${FORWARD_TYPE}" \
---topdown-model "${TOPDOWN_TYPE}" \
 --exp-setting "${EXP_SETTING}" \
 --dataset "${DATASET}" \
 --task "${TASK}" \
@@ -41,7 +39,6 @@ python experiment.py \
 --num-layers "${num_layers}" \
 --num-runs "${NUM_RUNS}" --seed "${SEED}" --epochs "${EPOCHS}" --val-every "${VAL_EVERY}" \
 --lr "${LR}" --patience "${PATIENCE}" --num-hidden "${NUM_HIDDEN}" \
---alternating-update \
 --overwrite-result "$@"
 
 done

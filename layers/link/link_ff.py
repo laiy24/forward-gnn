@@ -18,6 +18,7 @@ class LinkForwardLayer(BaseLinkLayer):
         super().__init__(gnn_layer, optimizer_name, optimizer_kwargs)
         self.args = args
         self.temperature = args.temperature
+        self.forward_type = args.forward_type
 
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor, edge_type: Optional[torch.Tensor] = None):
         return super()._forward(x, edge_index, edge_type)
@@ -34,7 +35,12 @@ class LinkForwardLayer(BaseLinkLayer):
         out = self.link_predict(z, data.edge_label_index)
 
         # update parameters
-        loss, outs, logits = super().forward_loss(out, data.edge_label.float())
+        if self.forward_type == "FL":
+            loss, outs, logits = super().forward_loss(out, data.edge_label)
+        elif self.forward_type == "FF":
+            loss, outs, logits = self.forwardforward_loss(z, out, data.edge_label, theta)
+        else:
+            raise ValueError(f"Undefined: {self.forward_type}")
         loss.backward()
         self.optimizer.step()
         return outs, logits
@@ -49,7 +55,13 @@ class LinkForwardLayer(BaseLinkLayer):
     ) -> tuple[torch.Tensor, torch.Tensor]:
         z = self.forward(x, edge_index)
         out = self.link_predict(z, label_index)
-        score = out.sum(dim=1).sigmoid()
+        if self.forward_type == "FL":
+            score = out.sum(dim=1).sigmoid()
+        elif self.forward_type == "FF":
+            score = torch.nan_to_num(out.pow(2).sum(dim=1) - theta, nan=-1e6).sigmoid()
+        else:
+            raise ValueError(f"Undefined: {self.forward_type}")
+
         return z, score
 
 
@@ -85,7 +97,7 @@ class LinkForwardTopDownLayer(BaseLinkLayer):
         self.optimizer.zero_grad()
         z = self.forward(x_prev, x_next, data.edge_index)
         out = self.link_predict(z, data.edge_label_index).sum(dim=1)
-        losses = self.loss(out, data.edge_label.float())
+        losses = self.loss(out, data.edge_label)
 
         # update parameters
         loss = losses.mean()

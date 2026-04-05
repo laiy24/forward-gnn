@@ -76,8 +76,7 @@ class NodeLabelAppendFFModel(BaseNodeGNNModel):
             if isinstance(layer, LayerNormalization):
                 with torch.no_grad():
                     pos_x = layer(pos_x).detach()
-                    for neg_x in neg_x_list:
-                        neg_x = layer(neg_x).detach()
+                    neg_x_list = [layer(neg_x).detach() for neg_x in neg_x_list]
                 continue
 
             epochs, epoch = tqdm(range(self.args.epochs)), -1
@@ -90,6 +89,7 @@ class NodeLabelAppendFFModel(BaseNodeGNNModel):
                     clear_cached_propagate()
 
                 for epoch in epochs:
+                    self.train()
                     _,logits = cast(FFLabelAppendLayer, layer).forward_train(
                         pos_x, neg_x_list, self.theta,
                         pos_edge_index, neg_edge_index,
@@ -103,7 +103,7 @@ class NodeLabelAppendFFModel(BaseNodeGNNModel):
                         val_accuracy, _ = self.eval_model(
                             data=data,
                             train_mask=data.train_mask,
-                            eval_mask=data.eval_mask,
+                            eval_mask=data.val_mask,
                             last_layer=i
                         )
                         if perf_log.update_val_perf(
@@ -159,7 +159,7 @@ class NodeLabelAppendFFModel(BaseNodeGNNModel):
                                 eval_mask=data.test_mask,
                                 last_layer=i
                             )
-            print(f"[Layer-{i}] Test Accuracy : {test_acc:.2f}%\n")
+            print(f"[Layer-{i}] Test Accuracy : {test_acc:.6f}%\n")
             result_manager.save_run_result(run_i, perf_dict=get_perf_dict(perf=test_acc), num_layers=(i + 1) // 2) # skip normalization layers
             
 
@@ -214,7 +214,7 @@ class NodeLabelAppendFFModel(BaseNodeGNNModel):
                         )
 
                     if i >= accumulate_from:
-                        accumulated_probs += prob[data.real_node_mask].detach()
+                        accumulated_probs += prob.detach()
             accumulated_probs_list.append(accumulated_probs.view(-1, 1))
 
         if not accumulated_probs_list:
@@ -282,7 +282,8 @@ class NodeVirtualNodeFFModel(BaseNodeGNNModel):
         aug_nodes_mask: torch.BoolTensor,
     ) -> tuple[Data, List[Data]]:
         assert self.augmenter is not None, "Augmenter must be initialized before creating pos/neg graphs."
-        num_negs = min(num_negs, self.augmenter.num_classes - 1)
+        num_classes = self.augmenter.num_classes
+        num_negs = min(num_negs, num_classes - 1)
 
 
         pos_graph = self.augmenter.augment(
@@ -293,13 +294,14 @@ class NodeVirtualNodeFFModel(BaseNodeGNNModel):
         # negative graph can has any lable except the real true one
         # we randomly select the lable in this case
         weights = torch.ones(
-            (self.augmenter.num_nodes, self.augmenter.num_classes), 
+            (self.augmenter.num_nodes, num_classes), 
             device=self.args.device
         )
         # set the probability of the TRUE class to 0.0 possibility
         weights[torch.arange(self.augmenter.num_nodes), self.augmenter.y] = 0.0
         # randomly pick classes based on weights
-        neg_classes = torch.multinomial(weights, num_samples=num_negs, replacement=False)
+        neg_classes = torch.multinomial(weights, num_samples=num_classes - 1, replacement=False).to(self.device) # (num_nodes, num_classes-1)
+        
         neg_graphs = []
         for i in range(min(num_negs, neg_classes.shape[1])):
             neg_graph = self.augmenter.augment(
@@ -379,9 +381,11 @@ class NodeVirtualNodeFFModel(BaseNodeGNNModel):
                     clear_cached_propagate()
 
                 for epoch in epochs:
-                    layer_loss = cast(FFVirtualNodeLayer, layer).forward_train(
+                    self.train()
+                    _, logits = cast(FFVirtualNodeLayer, layer).forward_train(
                         pos_graph,neg_graphs, self.theta
                     )
+                    separation = logits[0] - logits[1]
                     
                     # validation + testing
                     if epoch > self.args.val_from and (epoch + 1) % self.val_every == 0 \
@@ -389,7 +393,7 @@ class NodeVirtualNodeFFModel(BaseNodeGNNModel):
                         val_accuracy, _ = self.eval_model(
                             data=data,
                             train_mask=data.train_mask,
-                            eval_mask=data.eval_mask,
+                            eval_mask=data.val_mask,
                             eval_graphs=val_graphs,
                             last_layer=i
                         )
@@ -415,7 +419,8 @@ class NodeVirtualNodeFFModel(BaseNodeGNNModel):
                             break
 
                     epochs.set_description(
-                        f"[Layer {i}: Epoch-{epoch}] Loss={layer_loss:.4f} | "
+                        f"[Layer {i}: Epoch-{epoch}] Pos={logits[0]:.4f}, Neg={logits[1]:.4f} | "
+                        f"TrainSep: {separation:.4f} | "
                         f"{' | '.join([perf_log.val_perf_summary(), perf_log.test_perf_summary()])}"
                     )
                 
@@ -441,7 +446,7 @@ class NodeVirtualNodeFFModel(BaseNodeGNNModel):
                                 eval_graphs=test_graph,
                                 last_layer=i
                             )
-            print(f"[Layer-{i}] Test Accuracy : {test_acc:.2f}%\n")
+            print(f"[Layer-{i}] Test Accuracy : {test_acc:.6f}%\n")
             result_manager.save_run_result(run_i, perf_dict=get_perf_dict(perf=test_acc), num_layers=(i + 1) // 2) # skip normalization layers
 
             # use output from this gnn layer as the input to the next layer
