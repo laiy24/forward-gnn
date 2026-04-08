@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
 #SBATCH --time=9:00:00
-#SBATCH --array=0-9                  # Defines 9 separate jobs, indexed 0 through 8
+#SBATCH --array=0-17                  # Defines 18 separate jobs, indexed 0 through 17
 #SBATCH --output=%x-%A_%a.out        # %x=job-name, %A=master job ID, %a=array task ID
 
 set -euo pipefail
@@ -38,13 +38,21 @@ SCRIPTS=(
     "$THIS_DIR/linkpred/linkpred-bp.sh"
     "$THIS_DIR/linkpred/linkpred-ff.sh"
     "$THIS_DIR/linkpred/linkpred-fl.sh" 
-    "$THIS_DIR/linkpred/linkpred-fl-topdown.sh" #
+    "$THIS_DIR/linkpred/linkpred-fl-topdown.sh"
+    "$THIS_DIR/linkpred/linkpred-ff-cached.sh"
+    "$THIS_DIR/linkpred/linkpred-fl-cached.sh" 
+    "$THIS_DIR/linkpred/linkpred-fl-topdown-cached.sh"
     "$THIS_DIR/nodeclass/nodeclass-bp.sh"
     "$THIS_DIR/nodeclass/nodeclass-ff-label_appending.sh"
-    "$THIS_DIR/nodeclass/nodeclass-ff-virtual_nodes.sh" #
-    "$THIS_DIR/nodeclass/nodeclass-sf.sh" #
-    "$THIS_DIR/nodeclass/nodeclass-sf-top2input.sh" #
-    "$THIS_DIR/nodeclass/nodeclass-sf-top2loss.sh" #
+    "$THIS_DIR/nodeclass/nodeclass-ff-virtual_nodes.sh"
+    "$THIS_DIR/nodeclass/nodeclass-sf.sh"
+    "$THIS_DIR/nodeclass/nodeclass-sf-top2input.sh"
+    "$THIS_DIR/nodeclass/nodeclass-sf-top2loss.sh"
+    "$THIS_DIR/nodeclass/nodeclass-ff-label_appending-cached.sh"
+    "$THIS_DIR/nodeclass/nodeclass-ff-virtual_nodes-cached.sh"
+    "$THIS_DIR/nodeclass/nodeclass-sf-cached.sh"
+    "$THIS_DIR/nodeclass/nodeclass-sf-top2input-cached.sh"
+    "$THIS_DIR/nodeclass/nodeclass-sf-top2loss-cached.sh"
 )
 
 # ---- Select the script for this specific job ----

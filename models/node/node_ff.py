@@ -159,7 +159,7 @@ class NodeLabelAppendFFModel(BaseNodeGNNModel):
                                 eval_mask=data.test_mask,
                                 last_layer=i
                             )
-            print(f"[Layer-{i}] Test Accuracy : {test_acc:.6f}%\n")
+            print(f"[Layer-{i}] Test Accuracy : {test_acc:.6f}\n")
             result_manager.save_run_result(run_i, perf_dict=get_perf_dict(perf=test_acc), num_layers=(i + 1) // 2) # skip normalization layers
             
 
@@ -446,7 +446,7 @@ class NodeVirtualNodeFFModel(BaseNodeGNNModel):
                                 eval_graphs=test_graph,
                                 last_layer=i
                             )
-            print(f"[Layer-{i}] Test Accuracy : {test_acc:.6f}%\n")
+            print(f"[Layer-{i}] Test Accuracy : {test_acc:.6f}\n")
             result_manager.save_run_result(run_i, perf_dict=get_perf_dict(perf=test_acc), num_layers=(i + 1) // 2) # skip normalization layers
 
             # use output from this gnn layer as the input to the next layer

@@ -27,7 +27,7 @@ for dataset in "CitationFull-CiteSeer" "CitationFull-Cora_ML" "CitationFull-PubM
 
 for model in "GCN" "SAGE" "GAT"; do
 
-for num_layers in 4; do
+for num_layers in 1 2 3 4; do
 
 python experiment.py \
 --training-type "${TRAINING_TYPE}" \

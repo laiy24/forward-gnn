@@ -9,7 +9,7 @@
 scriptDir=$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")
 cd "${scriptDir}"/../../ || exit
 
-EXP_SETTING='node-ff-label-appending'
+EXP_SETTING='node-ff-label-appending-cached'
 TASK='node-class'
 TRAINING_TYPE='forward'
 FORWARD_TYPE='FF'
@@ -26,7 +26,7 @@ VAL_EVERY=2
 PATIENCE=100
 declare -a DATASETS=("CitationFull-CiteSeer" "CitationFull-Cora_ML" "CitationFull-PubMed" "Amazon-Photo" "GitHub")
 
-for model in "GCN" "SAGE" "GAT"; do
+for model in "GCN_Cached" "SAGE_Cached"; do
 
 for dataset in "${DATASETS[@]}"; do
   DATASET="${dataset}"

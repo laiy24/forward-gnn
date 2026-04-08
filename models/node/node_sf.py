@@ -129,7 +129,7 @@ class NodeSingleForwardModel(BaseNodeGNNModel):
             train_epochs.append(epoch)
             best_val_epochs.append(perf_log.best_val_epoch)
             test_acc, _ = self.eval_model(eval_mask=data.test_mask, last_layer=i)
-            print(f"[Layer-{i}] Test Accuracy : {test_acc:.6f}%\n")
+            print(f"[Layer-{i}] Test Accuracy : {test_acc:.6f}\n")
             result_manager.save_run_result(run_i, perf_dict=get_perf_dict(perf=test_acc), num_layers=i + 1)
 
             # use output from this gnn layer as the input to the next layer
@@ -334,7 +334,7 @@ class NodeSFTop2LossModel(BaseNodeGNNModel):
 
         # logging performance and saving results
         test_acc, _ = self.eval_model(eval_mask=data.test_mask)
-        print(f"Test Accuracy : {test_acc:.6f}%\n")
+        print(f"Test Accuracy : {test_acc:.6f}\n")
 
         return get_perf_dict(
             train_epochs=[epoch],
@@ -578,7 +578,7 @@ class NodeSFTop2InputModel(BaseNodeGNNModel):
 
         # logging performance and saving results
         test_acc, _ = self.eval_model(eval_mask=data.test_mask)
-        print(f"Test Accuracy : {test_acc:.6f}%\n")
+        print(f"Test Accuracy : {test_acc:.6f}\n")
 
         return get_perf_dict(
             train_epochs=[epoch],

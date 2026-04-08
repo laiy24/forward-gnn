@@ -5,6 +5,7 @@ import torch
 from tqdm import tqdm
 
 from utils.train_utils import EarlyStopping
+from utils.train_utils import reset_peak_memory_stats_if_cuda, get_peak_memory_usage_if_cuda
 from utils.log_utils import logger
 from utils.eval_utils import eval_node_classification, eval_link_prediction
 
@@ -31,6 +32,8 @@ class BPNodeClassificationTrainer:
 
         data = data.clone().to(self.device)
         model = model.to(self.device)
+
+        reset_peak_memory_stats_if_cuda(self.device)
 
         optimizer = torch.optim.Adam(model.parameters(), lr=self.lr, weight_decay=5e-4)
         criterion = torch.nn.CrossEntropyLoss()
@@ -72,9 +75,12 @@ class BPNodeClassificationTrainer:
             stopper.load_checkpoint(model)
 
         train_time = timer() - start
+        memory_usage = get_peak_memory_usage_if_cuda(self.device)
+        if memory_usage is not None:
+            print(f"Peak CUDA Memory Usage: {memory_usage:.2f} MiB")
         logger.info("Finished training")
 
-        return train_time, epoch, best_val_epoch
+        return train_time, epoch, best_val_epoch, memory_usage
 
     def test(self):
         model, data = self.model, self.data.to(self.device)
@@ -89,12 +95,13 @@ class BPNodeClassificationTrainer:
         return test_acc
 
     def train_test(self):
-        train_time, train_epochs, best_val_epoch = self.train()
+        train_time, train_epochs, best_val_epoch, memory_usage = self.train()
         test_acc = self.test()
 
         return {
             "test_perf": test_acc,
             "train_time": train_time,
+            "memory_usage": memory_usage,
             "train_epochs": [train_epochs],
             "best_val_epochs": [best_val_epoch] if best_val_epoch >= 0 else [],
         }
@@ -132,6 +139,8 @@ class BPLinkPredictionTrainer:
         train_data = train_data.clone().to(self.device)
         val_data = val_data.clone().to(self.device)
         model = model.to(self.device)
+
+        reset_peak_memory_stats_if_cuda(self.device)
 
         optimizer = torch.optim.Adam(model.parameters(), lr=self.lr, weight_decay=5e-4)
         criterion = torch.nn.BCEWithLogitsLoss()
@@ -178,9 +187,12 @@ class BPLinkPredictionTrainer:
             stopper.load_checkpoint(model)
 
         train_time = timer() - start
+        memory_usage = get_peak_memory_usage_if_cuda(self.device)
+        if memory_usage is not None:
+            print(f"Peak CUDA Memory Usage: {memory_usage:.2f} MiB")
         logger.info("Finished training")
 
-        return train_time, epoch, best_val_epoch
+        return train_time, epoch, best_val_epoch, memory_usage
 
     def test(self):
         model, test_data = self.model, self.test_data.to(self.device)
@@ -199,12 +211,13 @@ class BPLinkPredictionTrainer:
         return test_rocauc
 
     def train_test(self):
-        train_time, train_epochs, best_val_epoch = self.train()
+        train_time, train_epochs, best_val_epoch, memory_usage = self.train()
         test_rocauc = self.test()
 
         return {
             "test_perf": test_rocauc,
             "train_time": train_time,
+            "memory_usage": memory_usage,
             "train_epochs": [train_epochs],
             "best_val_epochs": [best_val_epoch] if best_val_epoch >= 0 else [],
         }

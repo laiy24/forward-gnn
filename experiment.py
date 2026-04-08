@@ -94,6 +94,7 @@ def main(args):
         perf_dict = {
             'perf': result["test_perf"],
             'train_time': result["train_time"],
+            'memory_usage': result.get("memory_usage"),
             'train_epochs': train_epochs,
             'best_val_epochs': best_val_epochs,
         }
@@ -287,6 +288,8 @@ def parse_args():
     parser.set_defaults(overwrite_result=False)
 
     # only needed for forward training, but we parse them for all models for simplicity
+    parser.add_argument('--use-cache', type=bool, default=False,
+                        help="whether to cache propagated messages for faster training (only applicable for some GNNs such as GraphSAGE and GCN)")
     parser.add_argument("--temperature", type=float, default=1.0,
                         help="softmax temperature")                       
     parser.add_argument("--grad-max-norm", type=float, default=1.0,

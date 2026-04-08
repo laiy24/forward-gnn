@@ -9,11 +9,11 @@
 scriptDir=$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")
 cd "${scriptDir}"/../../ || exit
 
-EXP_SETTING='node-ff-label-appending'
+EXP_SETTING='node-ff-virtual-nodes-cached'
 TASK='node-class'
 TRAINING_TYPE='forward'
 FORWARD_TYPE='FF'
-APPEND_LABEL='all'
+VIRTUAL_NODE=true
 
 NUM_RUNS=5
 SEED=100
@@ -22,11 +22,12 @@ NUM_HIDDEN=128
 LR=0.001
 NUM_NEGS=100  # to use all negatives
 LOSS_FN_NAME=forwardforward_loss_fn
+APPEND_LABEL=none
 VAL_EVERY=2
 PATIENCE=100
 declare -a DATASETS=("CitationFull-CiteSeer" "CitationFull-Cora_ML" "CitationFull-PubMed" "Amazon-Photo" "GitHub")
 
-for model in "GCN" "SAGE" "GAT"; do
+for model in "GCN_Cached" "SAGE_Cached"; do
 
 for dataset in "${DATASETS[@]}"; do
   DATASET="${dataset}"
@@ -46,6 +47,8 @@ python experiment.py \
 --loss-fn-name "${LOSS_FN_NAME}" \
 --num-negs "${NUM_NEGS}" \
 --append-label "${APPEND_LABEL}" \
+--virtual-node "${VIRTUAL_NODE}" \
+--aug-edge-direction bidirection \
 --overwrite-result "$@"
 
 done

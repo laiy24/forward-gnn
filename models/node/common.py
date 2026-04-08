@@ -48,10 +48,10 @@ class BaseNodeGNNModel(torch.nn.Module, ABC):
 		
 	@staticmethod
 	def _to_percent_accuracy(pred: torch.Tensor, target: torch.Tensor) -> float:
-		"""Returns accuracy as percentage in [0, 100]."""
+		"""Returns accuracy as percentage in [0, 1]."""
 		assert pred.shape == target.shape, (pred.shape, target.shape)
 		correct = (pred == target).int().sum().item()
-		return 100.0 * correct / max(1, target.shape[0])
+		return correct / max(1, target.shape[0])
 
 	@staticmethod
 	def _resolve_last_eval_layer(last_eval_layer: int, num_layers: int) -> int:

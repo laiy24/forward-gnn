@@ -48,6 +48,22 @@ def setup_cuda(args):
     return args
 
 
+def reset_peak_memory_stats_if_cuda(device):
+    """Reset CUDA peak memory stats when running on GPU.
+
+    This call is lightweight and should be invoked once before training starts.
+    """
+    if isinstance(device, torch.device) and device.type == "cuda" and torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats(device)
+
+
+def get_peak_memory_usage_if_cuda(device):
+    """Return peak CUDA memory usage (MiB) for the given device, or None on CPU."""
+    if isinstance(device, torch.device) and device.type == "cuda" and torch.cuda.is_available():
+        return torch.cuda.max_memory_allocated(device) / (1024 ** 2)
+    return None
+
+
 class EarlyStopping:
     def __init__(self,
                  patience=30,
@@ -114,11 +130,19 @@ class ResultManager:
         return run_result_path
 
     def save_run_result(self, run_i, perf_dict, num_layers=None):
+        memory_usage = perf_dict.get('memory_usage')
+        if memory_usage is None:
+            prev_result = self.load_run_result(run_i, num_layers=num_layers)
+            if prev_result is not None:
+                prev_memory_usage = prev_result.get('memory_usage')
+                if prev_memory_usage is not None:
+                    memory_usage = prev_memory_usage
         result_dict = {
             'perf': np.round(perf_dict['perf'], self.decimals),
             'best_val_epoch': "-".join(map(str, perf_dict['best_val_epochs'])),
             'train_epochs': "-".join(map(str, perf_dict['train_epochs'])),
             'train_time': np.round(perf_dict['train_time'], self.decimals),
+            'memory_usage': np.round(memory_usage, self.decimals) if memory_usage is not None else None,
             'run_i': run_i,
             'run_seed': self.seed_manager.get_run_seed(run_i),
         }

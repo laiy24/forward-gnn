@@ -211,6 +211,7 @@ dev*
 .DS_Store
 stdout*
 tmp_tb
-*plot*
+plots/**
+*.png
 outputs
 data/

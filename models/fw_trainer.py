@@ -10,6 +10,7 @@ from utils.eval_utils import eval_node_classification, eval_link_prediction
 from models.node.common import BaseNodeGNNModel
 from models.node.node_sf import NodeSingleForwardModel, NodeSFTop2InputModel, NodeSFTop2LossModel
 from models.node.node_ff import NodeVirtualNodeFFModel, NodeLabelAppendFFModel
+from utils.train_utils import reset_peak_memory_stats_if_cuda, get_peak_memory_usage_if_cuda
 
 class FWNodeClassificationTrainer:
     def __init__(self, model, data, device, result_manager, run_i, lr, epochs, patience, args):
@@ -29,7 +30,13 @@ class FWNodeClassificationTrainer:
         args = self.args
         
         model = model.to(args.device)
-        return model.forward_train(data, self.result_manager, self.run_i)
+        reset_peak_memory_stats_if_cuda(self.device)
+        result = model.forward_train(data, self.result_manager, self.run_i)
+        memory_usage = get_peak_memory_usage_if_cuda(self.device)
+        if memory_usage is not None:
+            print(f"Peak CUDA Memory Usage: {memory_usage:.2f} MiB")
+        result["memory_usage"] = memory_usage
+        return result
     
     def test(self):
         model, data = self.model, self.data.to(self.device)
@@ -41,7 +48,7 @@ class FWNodeClassificationTrainer:
             acc, _ = model.eval_model(data, train_mask=data.train_mask | data.val_mask, eval_mask=data.test_mask)
         else:
              raise NotImplementedError(f"Model type {type(model)} not supported for evaluation.")
-        print(f"Test Accuracy: {acc:.6f}%")
+        print(f"Test Accuracy: {acc:.6f}")
         return acc
 
     def train_test(self):
@@ -51,6 +58,7 @@ class FWNodeClassificationTrainer:
         return {
             "test_perf": test_acc,
             "train_time": result["train_time"],
+            "memory_usage": result.get("memory_usage"),
             "train_epochs": result["train_epochs"],
             'best_val_epochs': result["best_val_epochs"],
         }
@@ -79,7 +87,12 @@ class FWLinkPredictionTrainer:
 
     def train(self):
         model, train_data, val_data, test_data = self.model.to(self.device), self.train_data, self.val_data, self.test_data
+        reset_peak_memory_stats_if_cuda(self.device)
         result = model.forward_train(train_data, val_data, test_data, self.result_manager, self.run_i)
+        memory_usage = get_peak_memory_usage_if_cuda(self.device)
+        if memory_usage is not None:
+            print(f"Peak CUDA Memory Usage: {memory_usage:.2f} MiB")
+        result["memory_usage"] = memory_usage
 
         return result
 
@@ -95,6 +108,7 @@ class FWLinkPredictionTrainer:
         return {
             "test_perf": acc,
             "train_time": result["train_time"],
+            "memory_usage": result.get("memory_usage"),
             "train_epochs": result["train_epochs"],
             'best_val_epochs': result["best_val_epochs"],
         }
