@@ -25,7 +25,7 @@ Scripts in [`exp/nodeclass/`](./exp/nodeclass/) and [`exp/linkpred/`](./exp/link
 to train GNNs using the proposed forward learning algorithms of ForwardGNN or backpropagation 
 for node classification and link prediction, respectively. Simply do `sh {script_path}`.
 
-Sample Slurm Job script to runall experiment is in [`exp/runall-fgnn.sh`](./exp/runall-fgnn.sh). This submit 9 jobs that run each config respectively.
+Sample Slurm Job script to runall experiment is in [`exp/runall-fgnn.sh`](./exp/runall-fgnn.sh). This submit 18 jobs that run each config respectively.
 
 ### 5. Generate Plots
 By default the results are all store in ./results. To generate plots. 
